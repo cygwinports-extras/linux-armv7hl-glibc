@@ -1,0 +1,36 @@
+CROSS_HOST="armv7hl-unknown-linux-gnueabi"
+ORIG_PN="glibc"
+inherit cross
+
+DESCRIPTION="glibc for Linux armv7hl toolchain"
+HOMEPAGE="http://www.gnu.org/software/libc/"
+SRC_URI="mirror://gnu/glibc/glibc-${PV}.tar.xz
+	 mirror://gnu/glibc/glibc-ports-${PV}.tar.xz"
+
+DIFF_EXCLUDES="manual"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook() {
+	rm -fr ports
+	mv ../glibc-ports-${PV} ports
+}
+
+src_compile() {
+	cd ${B}
+	cygconf ${BOOTSTRAP+libc_cv_ctors_header=yes libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes}
+	cygmake -j1 PARALLELMFLAGS="${MAKEOPTS} ${BOOTSTRAP+libgcc_eh= static-gnulib=-lgcc}"
+}
+
+src_install() {
+	cd ${B}
+	cyginstall install_root=${D}
+
+	cross_desysrootize ${CROSS_LIBDIR}/lib{c,pthread}.so
+
+	rm -f ${D}${CROSS_SYSROOT}/{etc,usr/bin,usr/sbin}/*
+	rm -fr ${D}${CROSS_LIBDIR}/*/
+	rm -fr ${D}${CROSS_DATADIR}/{i18n,locale,zoneinfo}/
+	rm -f ${D}/var/db/Makefile
+}
+
+KEEP_LA_FILES="none"
